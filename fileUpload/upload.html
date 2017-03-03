@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        body,div{margin:0;padding:0;box-sizing:border-box;font-family: Microsoft Yahei;}
+        body{padding: 15px;}
+        #box{height:300px;background: #EEE;border:1px solid;position: relative;}
+        #mask{height:100%;font-size: 60px;text-align: center;opacity: 0;
+                    position: absolute;
+                    border:5px dotted #CCC;color:grey;line-height: 300px;}
+    </style>
+</head>
+<body>
+    <h1>传统文件上传</h1>
+    <form action="upload" method="post" enctype="multipart/form-data">
+        <fieldset>
+            <legend>上传</legend>
+            <input type="file" name="myFile" multiple>
+            <button>上传</button>
+        </fieldset>
+    </form>
+    <h1>拖拽式上传</h1>
+    <div id="box">
+        <div id="mask">请拖拽文件至此区域</div>
+    </div>
+</body>
+<script src="jquery.min.js"></script>
+<script>
+    var box=document.querySelector("#box");
+    var mask=document.querySelector("#mask");
+    //被拖动的元素在本元素内移动
+    mask.ondragover=function(e){
+        e.preventDefault();//阻止默认行为
+        mask.style.opacity=1;
+    }
+
+    //被拖动的元素离开了本元素
+    mask.ondragleave=function(){
+        mask.style.opacity=0;
+    }
+
+    //抵达目的地
+    box.ondrop=function(e){
+        e.preventDefault();
+        //获取拖拽的文件列表
+        var fileList=e.dataTransfer.files;
+        if($("table").length==0){
+            var table=$("<table border='1' width='100%'></table>");
+            var tr=$("<tr></tr>");
+            var th1=$("<th>文件名</th>");
+            var th2=$("<th>文件大小</th>");
+            var th3=$("<th>文件类型</th>");
+            var th4=$("<th>文件操作</th>");
+            tr.append(th1).append(th2).append(th3).append(th4);
+            tr.appendTo(table);
+            table.appendTo(this);
+        }
+        var formData=new FormData();
+        for(var f of fileList){
+            var tr=$("<tr></tr>");
+            var td1=$("<td></td>");
+            var td2=$("<td></td>");
+            var td3=$("<td></td>");
+            var td4=$("<td><button class='delBtn'>X</button></td>");
+
+            var size=0;
+            //文件大小的单位换算
+            if(f.size>1073741824){
+                size= (f.size/1073741824).toFixed(2)+"GB";
+            }else if(f.size>1048576){
+                size= (f.size/1048576).toFixed(2)+"MB";
+            }else if(f.size>1024){
+                size= (f.size/1024).toFixed(2)+"KB";
+            }
+
+            td1.html(f.name); //文件名
+            td2.html(size);   //文件大小
+            td3.html(f.type);  //文件类型
+            tr.append(td1).append(td2).append(td3).append(td4);
+            tr.appendTo("table");
+            //循环将文件添加到formData中，用同一个key：myFile,不会覆盖的。
+            formData.append("myFile",f);
+        }
+            //上传文件
+            $.ajax({
+                url:"upload",
+                method:"post",
+                processData:false,//告诉jQuery不要去处理发送的数据
+                contentType:false,//告诉jQuery不要去设置Content-Type请求头
+                data:formData,
+                success:function(result){
+                    alert(result);
+                }
+            })
+        mask.style.opacity=0;
+    }
+
+    $(document).on("click",".delBtn",function(){
+        //获取要删除的文件名
+        var tr=$(this).parents("tr");
+        var filename=tr.children("td:eq(0)").html();
+         //上传文件
+            $.ajax({
+                url:"delete",
+                method:"post",
+                data:{filename:filename},
+                success:function(result){
+                    if(result=="success"){
+                            tr.remove();
+                    }
+                }
+            })
+    })
+</script>
+</html>
